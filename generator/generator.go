@@ -169,13 +169,13 @@ func (g *Generator) Loop() error {
 				}
 				folderIndexWriter.WriteString(interfaceName)
 			}
-			folderIndexWriter.WriteString(" } from \"" + importName + "\";\n")
+			folderIndexWriter.WriteString(" } from \"" + importName + "\";\n\n")
 			folderIndexWriter.Flush()
 
 			if defaultExport != "" {
 				// write export to folder index file
-				folderIndexWriter.WriteString("\nimport { " + defaultExport + " } from \"" + importName + "\";\n")
-				folderIndexWriter.WriteString("export default " + defaultExport + ";\n")
+				folderIndexWriter.WriteString("import { " + defaultExport + " } from \"" + importName + "\";\n")
+				folderIndexWriter.WriteString("export default " + defaultExport + ";\n\n")
 				folderIndexWriter.Flush()
 
 				// write import to main index file
