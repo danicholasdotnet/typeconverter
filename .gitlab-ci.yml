@@ -20,3 +20,6 @@ testing:
     - go vet $(go list ./... | grep -v /vendor/)
     # - CGO_ENABLED=1 go test -race $(go list ./... | grep -v /vendor/) -v -coverprofile coverage.txt
     # - go tool cover -func=coverage.txt
+  only:
+    refs:
+      - tags
