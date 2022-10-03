@@ -3,7 +3,6 @@ package generator
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,37 +15,39 @@ type InterfaceName = string
 type DefaultExportMap = map[FolderName]InterfaceName
 
 type Generator struct {
-	structsDir       string // directory where all the go files with the structs are kept
+	inputFolder      string // directory where all the go files with the structs are kept
+	outputFolder     string // directory where all the ts files with the interfaces will go
 	defaultExportMap DefaultExportMap
 }
 
-func New(structsDir string, defaultExportMap DefaultExportMap) (g *Generator) {
+func New(inputFolder string, outputFolder string, defaultExportMap DefaultExportMap) (g *Generator) {
 	return &Generator{
-		structsDir:       structsDir,
+		inputFolder:      inputFolder,
+		outputFolder:     outputFolder,
 		defaultExportMap: defaultExportMap,
 	}
 }
 
-func (g *Generator) Loop() {
+func (g *Generator) Loop() error {
 	// create index file
-	mainIndexPath := filepath.Join("src", "index.ts")
+	mainIndexPath := filepath.Join(g.outputFolder, "index.ts")
 
-	if err := os.Mkdir("src", os.ModePerm); err != nil {
-		log.Fatal(fmt.Errorf("creating folder: %v", err))
+	if err := os.Mkdir(g.outputFolder, os.ModePerm); err != nil {
+		return fmt.Errorf("creating folder: %v", err)
 	}
 
 	mainIndexFile, err := os.Create(mainIndexPath)
 	if err != nil {
-		log.Fatal(fmt.Errorf("creating file: %v", err))
+		return fmt.Errorf("creating file: %v", err)
 	}
 	mainIndexWriter := bufio.NewWriter(mainIndexFile)
 
 	defaultExports := []string{}
 
 	// loop through each folder
-	folders, err := os.ReadDir(g.structsDir)
+	folders, err := os.ReadDir(g.inputFolder)
 	if err != nil {
-		log.Fatal(fmt.Errorf("reading directory: %v", err))
+		return fmt.Errorf("reading directory: %v", err)
 	}
 	for _, folder := range folders {
 		if !folder.IsDir() {
@@ -54,28 +55,28 @@ func (g *Generator) Loop() {
 		}
 
 		// create index file
-		folderIndexPath := filepath.Join("src", folder.Name(), "index.ts")
+		folderIndexPath := filepath.Join(g.outputFolder, folder.Name(), "index.ts")
 
-		if err := os.Mkdir(filepath.Join("src", folder.Name()), os.ModePerm); err != nil {
-			log.Fatal(fmt.Errorf("creating folder: %v", err))
+		if err := os.Mkdir(filepath.Join(g.outputFolder, folder.Name()), os.ModePerm); err != nil {
+			return fmt.Errorf("creating folder: %v", err)
 		}
 
 		folderIndexFile, err := os.Create(folderIndexPath)
 		if err != nil {
-			log.Fatal(fmt.Errorf("creating index file: %v", err))
+			return fmt.Errorf("creating index file: %v", err)
 		}
 		folderIndexWriter := bufio.NewWriter(folderIndexFile)
 
-		files, err := os.ReadDir(filepath.Join(g.structsDir, folder.Name()))
+		files, err := os.ReadDir(filepath.Join(g.inputFolder, folder.Name()))
 		if err != nil {
-			log.Fatal(fmt.Errorf("reading structs directory: %v", err))
+			return fmt.Errorf("reading input directory: %v", err)
 		}
 		for _, file := range files {
 			if file.IsDir() {
 				continue
 			}
 
-			path := filepath.Join(g.structsDir, folder.Name(), file.Name())
+			path := filepath.Join(g.inputFolder, folder.Name(), file.Name())
 
 			// convert go struct to ts interface
 			res, err := converter.Convert(path)
@@ -111,16 +112,16 @@ func (g *Generator) Loop() {
 			}
 
 			// create the new ts file
-			newFile := strings.Replace(strings.Replace(path, "structs", "src", 1), ".go", ".ts", 1)
+			newFile := strings.Replace(strings.Replace(path, g.inputFolder, g.outputFolder, 1), ".go", ".ts", 1)
 
 			newPath, newFN := filepath.Split(newFile)
 			if err := os.MkdirAll(newPath, os.ModePerm); err != nil {
-				log.Fatal(fmt.Errorf("creating file path: %v", err))
+				return fmt.Errorf("creating file path: %v", err)
 			}
 
 			f, err := os.Create(newFile)
 			if err != nil {
-				log.Fatal(fmt.Errorf("creating file: %v", err))
+				return fmt.Errorf("creating file: %v", err)
 			}
 
 			// write the necessary imports to it
@@ -196,4 +197,6 @@ func (g *Generator) Loop() {
 	}
 	mainIndexWriter.WriteString(" }\n")
 	mainIndexWriter.Flush()
+
+	return nil
 }
