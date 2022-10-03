@@ -1,0 +1,22 @@
+image: registry.wilxite.uk/base-images/golang-1.18-alpine3.15:main
+
+variables:
+  REPO_NAME: gitlab.wilxite.uk/wilxite-modules/auth
+
+# The symbolic link is needed to make sure the project is in the $GOPATH
+before_script:
+  - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
+  - ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
+  - cd $GOPATH/src/$REPO_NAME
+  - apk add --no-cache build-base
+
+stages:
+  - test
+
+testing:
+  stage: test
+  script:
+    - go fmt $(go list ./... | grep -v /vendor/)
+    - go vet $(go list ./... | grep -v /vendor/)
+    # - CGO_ENABLED=1 go test -race $(go list ./... | grep -v /vendor/) -v -coverprofile coverage.txt
+    # - go tool cover -func=coverage.txt
