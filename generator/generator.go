@@ -50,7 +50,7 @@ func (g *Generator) Loop() error {
 		return fmt.Errorf("reading directory: %v", err)
 	}
 	for _, folder := range folders {
-		if !folder.IsDir() || folder.Name() == ".git" {
+		if !folder.IsDir() || folder.Name() == ".git" || folder.Name() == g.outputFolder {
 			continue
 		}
 
