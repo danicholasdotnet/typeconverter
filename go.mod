@@ -1,4 +1,4 @@
-module gitlab.wilxite.uk/wilxite-modules/interface-generator
+module gitlab.wilxite.uk/wilxite-modules/typeconverter
 
 go 1.19
 

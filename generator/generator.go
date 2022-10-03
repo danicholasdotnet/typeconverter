@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gitlab.wilxite.uk/wilxite-modules/interface-generator/converter"
+	"gitlab.wilxite.uk/wilxite-modules/typeconverter/converter"
 )
 
 type FolderName = string
