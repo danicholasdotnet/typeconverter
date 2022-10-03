@@ -76,10 +76,11 @@ func (g *Generator) Loop() error {
 				continue
 			}
 
-			path := filepath.Join(g.inputFolder, folder.Name(), file.Name())
+			oldFile := filepath.Join(g.inputFolder, folder.Name(), file.Name())
+			newFile := filepath.Join(g.outputFolder, folder.Name(), strings.Replace(file.Name(), ".go", ".ts", 1))
 
 			// convert go struct to ts interface
-			res, err := converter.Convert(path)
+			res, err := converter.Convert(oldFile)
 			if err != nil {
 				fmt.Printf("converting structs: %v\n", err)
 			}
@@ -112,8 +113,6 @@ func (g *Generator) Loop() error {
 			}
 
 			// create the new ts file
-			newFile := strings.Replace(strings.Replace(path, g.inputFolder, g.outputFolder, 1), ".go", ".ts", 1)
-
 			newPath, newFN := filepath.Split(newFile)
 			if err := os.MkdirAll(newPath, os.ModePerm); err != nil {
 				return fmt.Errorf("creating file path: %v", err)
