@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"gitlab.wilxite.uk/wilxite-modules/typeconverter/converter"
+	"gitlab.wilxite.uk/wilxite-modules/typeconverter/expander"
 )
 
 type FolderName = string
@@ -18,13 +19,15 @@ type Generator struct {
 	inputFolder      string // directory where all the go files with the structs are kept
 	outputFolder     string // directory where all the ts files with the interfaces will go
 	defaultExportMap DefaultExportMap
+	expand           bool
 }
 
-func New(inputFolder string, outputFolder string, defaultExportMap DefaultExportMap) (g *Generator) {
+func New(inputFolder string, outputFolder string, defaultExportMap DefaultExportMap, expand bool) (g *Generator) {
 	return &Generator{
 		inputFolder:      inputFolder,
 		outputFolder:     outputFolder,
 		defaultExportMap: defaultExportMap,
+		expand:           expand,
 	}
 }
 
@@ -78,6 +81,11 @@ func (g *Generator) Loop() error {
 
 			oldFile := filepath.Join(g.inputFolder, folder.Name(), file.Name())
 			newFile := filepath.Join(g.outputFolder, folder.Name(), strings.Replace(file.Name(), ".go", ".ts", 1))
+
+			if g.expand {
+				// expand go structs to include update and filter structs
+				expander.Expand(oldFile)
+			}
 
 			// convert go struct to ts interface
 			res, err := converter.Convert(oldFile)
