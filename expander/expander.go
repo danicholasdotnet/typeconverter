@@ -124,8 +124,9 @@ func Expand(fn string) error {
 		log.Fatal(fmt.Errorf("opening file: %v", err))
 	}
 	w := bufio.NewWriter(file)
-	for _, s := range strings.Split(update.String(), "\\n") {
-		w.WriteString(s + "\n")
+	updateText := update.String()
+	if len(updateText) > 0 {
+		w.WriteString(updateText + "\n")
 	}
 	w.Flush()
 
