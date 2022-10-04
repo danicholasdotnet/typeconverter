@@ -44,14 +44,19 @@ func Expand(fn string) error {
 				addField := false
 				tags := strings.Split(strings.Replace(astField.Tag.Value, "`", "", 2), " ")
 				for _, tag := range tags {
-					name := strings.Split(tag, ":")[0]
-					if name == "update" {
-						addField = true
+					if tag != "" {
+						split := strings.Split(tag, ":")
+						name := split[0]
+						if name == "update" {
+							addField = true
+						}
+
+						value := strings.Replace(split[1], `"`, ``, 2)
+						field.Tags = append(field.Tags, Tag{
+							Name:  name,
+							Value: value,
+						})
 					}
-					field.Tags = append(field.Tags, Tag{
-						Name:  name,
-						Value: strings.Replace(strings.Split(tag, ":")[1], `"`, ``, 2),
-					})
 				}
 
 				if addField {
@@ -87,7 +92,6 @@ func Expand(fn string) error {
 			}
 
 			if len(updateFields) > 0 {
-				fmt.Printf("updateFields: %#v\n", updateFields)
 				update.WriteString("\ntype " + name + "Update struct {\n")
 				for _, field := range updateFields {
 					tagString := new(strings.Builder)
