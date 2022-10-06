@@ -19,6 +19,36 @@ type Field struct {
 	TagName string
 }
 
+func parseField(t ast.Expr) (string, error) {
+	switch t := t.(type) {
+	case *ast.StarExpr:
+		return "", fmt.Errorf("unexpected star expr in switch")
+	case *ast.ArrayType:
+		switch t2 := t.Elt.(type) {
+		case *ast.Ident:
+			return "[]" + t2.String(), nil
+		default:
+			return "", fmt.Errorf("unexpected slice of unknown in switch")
+		}
+	case *ast.StructType:
+		return "", fmt.Errorf("unexpected struct type in switch")
+	case *ast.Ident:
+		return t.String(), nil
+	case *ast.SelectorExpr:
+		return fmt.Sprintf("%s.%s", t.X, t.Sel), nil
+	case *ast.MapType:
+		mapValue, err := parseField(t.Value)
+		if err != nil {
+			return "", fmt.Errorf("parsing map value: %v", err)
+		}
+		return fmt.Sprintf("map[%s]%s", t.Key, mapValue), nil
+	case *ast.InterfaceType:
+		return "", fmt.Errorf("unexpected interface type in switch")
+	default:
+		return "", fmt.Errorf("unexpected no type found in switch")
+	}
+}
+
 func Expand(fn string) error {
 	var f ast.Node
 	f, err := parser.ParseFile(token.NewFileSet(), fn, nil, parser.SpuriousErrors)
@@ -59,30 +89,11 @@ func Expand(fn string) error {
 						field.TagName = strings.ToLower(field.Name)
 					}
 
-					t := astField.Type
-					switch t := t.(type) {
-					case *ast.StarExpr:
-						panic(fmt.Errorf("unexpected star expr: %v", err))
-					case *ast.ArrayType:
-						switch t2 := t.Elt.(type) {
-						case *ast.Ident:
-							field.Type = "[]" + t2.String()
-						default:
-							panic(fmt.Errorf("enexpected slice of unknown: %v", err))
-						}
-					case *ast.StructType:
-						panic(fmt.Errorf("unexpected struct type: %v", err))
-					case *ast.Ident:
-						field.Type = t.String()
-					case *ast.SelectorExpr:
-						field.Type = fmt.Sprintf("%s.%s", t.X, t.Sel)
-					case *ast.MapType:
-						panic(fmt.Errorf("unexpected map type: %v", err))
-					case *ast.InterfaceType:
-						panic(fmt.Errorf("unexpected interface type: %v", err))
-					default:
-						panic(fmt.Errorf("unexpected no type found: %v", err))
+					t, err := parseField(astField.Type)
+					if err != nil {
+						panic(fmt.Errorf("parseField: %v", err))
 					}
+					field.Type = t
 
 					updateFields = append(updateFields, field)
 				}
