@@ -14,14 +14,9 @@ import (
 )
 
 type Field struct {
-	Name string
-	Type string
-	Tags []Tag
-}
-
-type Tag struct {
-	Name  string
-	Value string
+	Name    string
+	Type    string
+	TagName string
 }
 
 func Expand(fn string) error {
@@ -53,15 +48,16 @@ func Expand(fn string) error {
 					if tag.Key == "update" {
 						addField = true
 					}
-
-					field.Tags = append(field.Tags, Tag{
-						Name:  tag.Key,
-						Value: tag.Value(),
-					})
+					if tag.Key == "json" {
+						field.TagName = tag.Name
+					}
 				}
 
 				if addField {
 					field.Name = astField.Names[0].Name
+					if field.TagName == "" {
+						field.TagName = strings.ToLower(field.Name)
+					}
 
 					t := astField.Type
 					switch t := t.(type) {
@@ -95,22 +91,7 @@ func Expand(fn string) error {
 			if len(updateFields) > 0 {
 				update.WriteString("\ntype " + name + "Update struct {\n")
 				for _, field := range updateFields {
-					tagString := new(strings.Builder)
-					tagString.WriteByte('`')
-					for i, tag := range field.Tags {
-						if tag.Name != "validate" && tag.Name != "update" {
-							if i > 0 {
-								tagString.WriteByte(' ')
-							}
-							tagValue := tag.Value
-							if tag.Name == "json" || tag.Name == "bson" {
-								tagValue += ",omitempty"
-							}
-							tagString.WriteString(tag.Name + `:"` + tagValue + `"`)
-						}
-					}
-					tagString.WriteByte('`')
-					update.WriteString(fmt.Sprintf("\t%s\t\t*%s\t\t%s\n", field.Name, field.Type, tagString.String()))
+					update.WriteString(fmt.Sprintf("\t%s\t\t*%s\t\t`json:\"%s,omitempty\" bson:\"%s,omitempty\"`\n", field.Name, field.Type, field.TagName, field.TagName))
 				}
 				update.WriteString("}")
 			}
