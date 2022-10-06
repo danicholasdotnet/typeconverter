@@ -9,6 +9,8 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	"github.com/fatih/structtag"
 )
 
 type Field struct {
@@ -42,21 +44,20 @@ func Expand(fn string) error {
 			for _, astField := range x.Fields.List {
 				field := Field{}
 				addField := false
-				tags := strings.Split(strings.Replace(astField.Tag.Value, "`", "", 2), " ")
-				for _, tag := range tags {
-					if tag != "" {
-						split := strings.Split(tag, ":")
-						name := split[0]
-						if name == "update" {
-							addField = true
-						}
 
-						value := strings.Replace(split[1], `"`, ``, 2)
-						field.Tags = append(field.Tags, Tag{
-							Name:  name,
-							Value: value,
-						})
+				tags, err := structtag.Parse(strings.Replace(astField.Tag.Value, "`", "", 2))
+				if err != nil {
+					panic(fmt.Errorf("parsing tags: %v", err))
+				}
+				for _, tag := range tags.Tags() {
+					if tag.Key == "update" {
+						addField = true
 					}
+
+					field.Tags = append(field.Tags, Tag{
+						Name:  tag.Key,
+						Value: tag.Value(),
+					})
 				}
 
 				if addField {
@@ -102,7 +103,7 @@ func Expand(fn string) error {
 								tagString.WriteByte(' ')
 							}
 							tagValue := tag.Value
-							if tag.Name == "json" {
+							if tag.Name == "json" || tag.Name == "bson" {
 								tagValue += ",omitempty"
 							}
 							tagString.WriteString(tag.Name + `:"` + tagValue + `"`)
