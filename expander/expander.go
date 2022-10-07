@@ -85,15 +85,16 @@ func Expand(fn string) error {
 
 				if addField {
 					field.Name = astField.Names[0].Name
-					if field.TagName == "" {
-						field.TagName = strings.ToLower(field.Name)
-					}
 
 					t, err := parseField(astField.Type)
 					if err != nil {
 						panic(fmt.Errorf("parseField: %v", err))
 					}
 					field.Type = t
+
+					if field.TagName == "" {
+						field.TagName = strings.ToLower(field.Name)
+					}
 
 					updateFields = append(updateFields, field)
 				}
