@@ -89,7 +89,6 @@ func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) (
 	case *ast.Ident:
 		s.WriteString(getIdent(t.String()))
 		if t.Obj == nil && startsWithCapital(t.Name) {
-
 			duplicate := false
 			for _, existing := range internalImports {
 				if t.Name == existing {
@@ -99,8 +98,6 @@ func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) (
 			if !duplicate {
 				internalImports = append(internalImports, t.Name)
 			}
-
-			internalImports = append(internalImports, t.Name)
 		}
 	case *ast.SelectorExpr:
 		longType := fmt.Sprintf("%s.%s", t.X, t.Sel)
