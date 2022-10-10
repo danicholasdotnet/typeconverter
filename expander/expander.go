@@ -22,16 +22,19 @@ type Field struct {
 func parseField(t ast.Expr) (string, error) {
 	switch t := t.(type) {
 	case *ast.StarExpr:
-		return "", fmt.Errorf("unexpected star expr in switch")
-	case *ast.ArrayType:
-		switch t2 := t.Elt.(type) {
-		case *ast.Ident:
-			return "[]" + t2.String(), nil
-		default:
-			return "", fmt.Errorf("unexpected slice of unknown in switch")
+		starValue, err := parseField(t.X)
+		if err != nil {
+			return "", fmt.Errorf("parsing type of pointer: %v", err)
 		}
+		return fmt.Sprintf("*%s", starValue), nil
+	case *ast.ArrayType:
+		sliceValue, err := parseField(t.Elt)
+		if err != nil {
+			return "", fmt.Errorf("parsing type of slice: %v", err)
+		}
+		return fmt.Sprintf("[]%s", sliceValue), nil
 	case *ast.StructType:
-		return "", fmt.Errorf("unexpected struct type in switch")
+		return "", fmt.Errorf("expander cannot handle struct types yet")
 	case *ast.Ident:
 		return t.String(), nil
 	case *ast.SelectorExpr:
@@ -43,9 +46,9 @@ func parseField(t ast.Expr) (string, error) {
 		}
 		return fmt.Sprintf("map[%s]%s", t.Key, mapValue), nil
 	case *ast.InterfaceType:
-		return "", fmt.Errorf("unexpected interface type in switch")
+		return "", fmt.Errorf("expander cannot handle interface types yet")
 	default:
-		return "", fmt.Errorf("unexpected no type found in switch")
+		return "", fmt.Errorf("expander cannot handle this type yet: %s", t)
 	}
 }
 
