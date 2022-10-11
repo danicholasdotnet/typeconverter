@@ -245,9 +245,36 @@ func Convert(fn string) (*Response, error) {
 				w.WriteString("\n\n")
 			}
 
+			embedded := (*string)(nil)
+			for _, f := range x.Fields.List {
+				if len(f.Names) == 0 {
+					switch t := f.Type.(type) {
+					case *ast.SelectorExpr:
+						str := t.Sel.String()
+						externalImports = append(externalImports, Import{Package: fmt.Sprintf("%s", t.X), Struct: str})
+						embedded = &str
+						continue
+					case *ast.Ident:
+						if startsWithCapital(t.Name) {
+							if t.Obj == nil {
+								internalImports = append(internalImports, t.Name)
+							}
+							embedded = &t.Name
+							continue
+						}
+					default:
+						err := fmt.Errorf("unhandled: %s, %T", t, t)
+						fmt.Println(err)
+					}
+				}
+			}
+
 			interfaces = append(interfaces, name)
 			w.WriteString("export interface ")
 			w.WriteString(name)
+			if embedded != nil {
+				w.WriteString(fmt.Sprintf(" extends %s", *embedded))
+			}
 			w.WriteString(" {\n")
 
 			ei, ii, err := writeFields(w, x.Fields.List, 0)
