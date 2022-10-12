@@ -235,11 +235,16 @@ func Convert(fn string) (*Response, error) {
 	name := "MyInterface"
 
 	first := true
+	generic := false
 
 	ast.Inspect(f, func(n ast.Node) bool {
 		switch x := n.(type) {
 		case *ast.Ident:
-			name = x.Name
+			if x.Name == "T" {
+				generic = true
+			} else {
+				name = x.Name
+			}
 		case *ast.StructType:
 			if !first {
 				w.WriteString("\n\n")
@@ -272,6 +277,9 @@ func Convert(fn string) (*Response, error) {
 			interfaces = append(interfaces, name)
 			w.WriteString("export interface ")
 			w.WriteString(name)
+			if generic {
+				w.WriteString("<T>")
+			}
 			if embedded != nil {
 				w.WriteString(fmt.Sprintf(" extends %s", *embedded))
 			}
@@ -287,6 +295,7 @@ func Convert(fn string) (*Response, error) {
 			w.WriteByte('}')
 
 			first = false
+			generic = false
 			return false
 		}
 		return true
