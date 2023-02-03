@@ -298,9 +298,6 @@ func Convert(fn string) (*Response, error) {
 			generic = false
 			return false
 		case *ast.MapType:
-			fmt.Printf("n: %#v\n", n)
-			fmt.Printf("x: %#v\n", x)
-			fmt.Printf("x.Key: %#v\n", x.Key)
 			if !first {
 				w.WriteString("\n\n")
 			}
