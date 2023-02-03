@@ -297,6 +297,39 @@ func Convert(fn string) (*Response, error) {
 			first = false
 			generic = false
 			return false
+		case *ast.MapType:
+			fmt.Printf("n: %#v\n", n)
+			fmt.Printf("x: %#v\n", x)
+			fmt.Printf("x.Key: %#v\n", x.Key)
+			if !first {
+				w.WriteString("\n\n")
+			}
+
+			interfaces = append(interfaces, name)
+			w.WriteString("export interface ")
+			w.WriteString(name)
+			if generic {
+				w.WriteString("<T>")
+			}
+			w.WriteString(" {\n\t[key: ")
+			ei, ii, err := writeType(w, x.Key, 1, false)
+			if err != nil {
+				panic(fmt.Errorf("write type: %v", err))
+			}
+			externalImports = append(externalImports, ei...)
+			internalImports = append(internalImports, ii...)
+			w.WriteString("]: ")
+			ei, ii, err = writeType(w, x.Value, 1, false)
+			if err != nil {
+				panic(fmt.Errorf("write type: %v", err))
+			}
+			externalImports = append(externalImports, ei...)
+			internalImports = append(internalImports, ii...)
+			w.WriteString(";\n}")
+
+			first = false
+			generic = false
+			return false
 		}
 		return true
 	})
