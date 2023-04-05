@@ -45,6 +45,7 @@ func startsWithCapital(s string) bool {
 func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) (externalImports []Import, internalImports []string, e error) {
 	switch t := t.(type) {
 	case *ast.StarExpr:
+		// *t => t | undefined
 		if optionalParens {
 			s.WriteByte('(')
 		}
@@ -60,6 +61,7 @@ func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) (
 			s.WriteByte(')')
 		}
 	case *ast.ArrayType:
+		// []t => t[], []byte => string
 		if v, ok := t.Elt.(*ast.Ident); ok && v.String() == "byte" {
 			s.WriteString("string")
 			break
@@ -73,6 +75,7 @@ func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) (
 		}
 		s.WriteString("[]")
 	case *ast.StructType:
+		// handle inline struct types
 		s.WriteString("{\n")
 		ei, ii, err := writeFields(s, t.Fields.List, depth+1)
 		externalImports = append(externalImports, ei...)
@@ -87,11 +90,13 @@ func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) (
 		}
 		s.WriteByte('}')
 	case *ast.Ident:
+		// handle imports from this package
 		s.WriteString(getIdent(t.String()))
 		if t.Obj == nil && startsWithCapital(t.Name) {
 			internalImports = append(internalImports, t.Name)
 		}
 	case *ast.SelectorExpr:
+		// handle import from other packages as well as time/decimal
 		longType := fmt.Sprintf("%s.%s", t.X, t.Sel)
 		switch longType {
 		case "time.Time":
@@ -103,6 +108,7 @@ func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) (
 			externalImports = append(externalImports, Import{Package: fmt.Sprintf("%s", t.X), Struct: t.Sel.String()})
 		}
 	case *ast.MapType:
+		// map[t1]t2 => { [key: t1]: t2 }
 		s.WriteString("{ [key: ")
 		ei, ii, err := writeType(s, t.Key, depth, false)
 		externalImports = append(externalImports, ei...)
@@ -121,8 +127,10 @@ func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) (
 		}
 		s.WriteByte('}')
 	case *ast.InterfaceType:
+		// interface{} == any
 		s.WriteString("any")
 	case *ast.IndexExpr:
+		// generic expressions
 		ei, ii, err := writeType(s, t.X, depth, false)
 		externalImports = append(externalImports, ei...)
 		internalImports = append(internalImports, ii...)
@@ -130,6 +138,7 @@ func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) (
 			e = fmt.Errorf("writeType error: %v", err)
 			return
 		}
+
 		s.WriteString("<")
 		ei, ii, err = writeType(s, t.Index, depth, false)
 		externalImports = append(externalImports, ei...)
