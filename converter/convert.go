@@ -122,6 +122,23 @@ func writeType(s *strings.Builder, t ast.Expr, depth int, optionalParens bool) (
 		s.WriteByte('}')
 	case *ast.InterfaceType:
 		s.WriteString("any")
+	case *ast.IndexExpr:
+		ei, ii, err := writeType(s, t.X, depth, false)
+		externalImports = append(externalImports, ei...)
+		internalImports = append(internalImports, ii...)
+		if err != nil {
+			e = fmt.Errorf("writeType error: %v", err)
+			return
+		}
+		s.WriteString("<")
+		ei, ii, err = writeType(s, t.Index, depth, false)
+		externalImports = append(externalImports, ei...)
+		internalImports = append(internalImports, ii...)
+		if err != nil {
+			e = fmt.Errorf("writeType error: %v", err)
+			return
+		}
+		s.WriteString(">")
 	default:
 		err := fmt.Errorf("unhandled: %s, %T", t, t)
 		fmt.Println(err)
