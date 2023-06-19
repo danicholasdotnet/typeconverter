@@ -1,4 +1,4 @@
-module gitlab.wilxite.uk/wilxite-modules/typeconverter
+module github.com/lumosnox7/typeconverter
 
 go 1.19
 
